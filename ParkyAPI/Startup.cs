@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ParkyAPI.Data;
+using ParkyAPI.Mapper;
 using ParkyAPI.Repository.Implementations;
 using ParkyAPI.Repository.Interfaces;
 
@@ -25,6 +26,8 @@ namespace ParkyAPI
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<INationalParkRepository, NationalParkRepository>();
+
+            services.AddAutoMapper(typeof(MappingConfiguration));
             services.AddControllers();
         }
 
