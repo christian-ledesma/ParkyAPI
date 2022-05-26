@@ -8,8 +8,10 @@ using System.Collections.Generic;
 
 namespace ParkyAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    //[Route("api/[controller]")]
     [ApiController]
+    //[ApiExplorerSettings(GroupName = "ParkyOpenAPISpecNationalParks")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public class NationalParksController : ControllerBase
     {
@@ -78,7 +80,7 @@ namespace ParkyAPI.Controllers
                 return StatusCode(500, ModelState);
             }
 
-            return CreatedAtRoute("GetNationalPark", new { id = nationalPark.Id }, nationalPark);
+            return CreatedAtRoute("GetNationalPark", new { version = HttpContext.GetRequestedApiVersion().ToString(), id = nationalPark.Id }, nationalPark);
         }
 
         [HttpPatch("{id}", Name = "UpdateNationalPark")]
