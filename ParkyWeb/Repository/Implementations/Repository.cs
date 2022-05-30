@@ -43,7 +43,7 @@ namespace ParkyWeb.Repository.Implementations
                 return false;
         }
 
-        public async Task<System.Collections.Generic.IEnumerable<T>> GetAll(string url, int id)
+        public async Task<IEnumerable<T>> GetAll(string url)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
 
