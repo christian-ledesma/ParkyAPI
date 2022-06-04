@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ParkyAPI.Models;
@@ -50,6 +51,7 @@ namespace ParkyAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NationalParkDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
+        [Authorize]
         public IActionResult GetNationalPark(int id)
         {
             var res = _repository.GetNationalPark(id);

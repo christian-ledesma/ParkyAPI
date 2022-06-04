@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ParkyAPI.Data;
 using ParkyAPI.Mapper;
@@ -16,6 +18,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 
 namespace ParkyAPI
 {
@@ -31,10 +34,12 @@ namespace ParkyAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors();
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<INationalParkRepository, NationalParkRepository>();
             services.AddScoped<ITrailRepository, TrailRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
 
             services.AddAutoMapper(typeof(MappingConfiguration));
             services.AddApiVersioning(options =>
@@ -50,6 +55,26 @@ namespace ParkyAPI
             });
             services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerConfig>();
             services.AddSwaggerGen();
+            var mainSettings = Configuration.GetSection("MainSettings");
+            var key = Encoding.ASCII.GetBytes(mainSettings.Get<MainSettings>().Secret);
+            services.Configure<MainSettings>(mainSettings);
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            });
 
             //services.AddSwaggerGen(options =>
             //{
@@ -121,7 +146,14 @@ namespace ParkyAPI
             //});
 
             app.UseRouting();
+            app.UseCors(options =>
+            {
+                options.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            });
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
