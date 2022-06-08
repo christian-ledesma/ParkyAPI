@@ -24,7 +24,7 @@ namespace ParkyAPI.Repository.Implementations
         }
         public async Task<User> Authenticate(string username, string password)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(x => x.Name == username && x.Password == password);
+            var user = await _context.Users.SingleOrDefaultAsync(x => x.Username == username && x.Password == password);
             if(user == null)
                 return null;
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -50,7 +50,7 @@ namespace ParkyAPI.Repository.Implementations
         {
             var user = new User()
             {
-                Name = username,
+                Username = username,
                 Password = password,
                 //Role = "Admin"
             };
@@ -62,7 +62,7 @@ namespace ParkyAPI.Repository.Implementations
 
         public async Task<bool> UserIsUnique(string username)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(x => x.Name == username);
+            var user = await _context.Users.SingleOrDefaultAsync(x => x.Username == username);
             if (user == null)
                 return true;
             return false;

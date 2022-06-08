@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using ParkyWeb.Models;
 using ParkyWeb.Repository.Interfaces;
 using System.IO;
@@ -6,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace ParkyWeb.Controllers
 {
+    [Authorize]
     public class NationalParksController : Controller
     {
         private readonly INationalParkRepository _parkRepository;
@@ -17,13 +20,13 @@ namespace ParkyWeb.Controllers
         {
             return View(new NationalPark());
         }
-
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Upsert(int? id)
         {
             NationalPark nationalPark = new NationalPark();
             if (id == null)
                 return View(nationalPark);
-            nationalPark = await _parkRepository.GetById(StaticDetails.NationalParkApiPath, id.GetValueOrDefault());
+            nationalPark = await _parkRepository.GetById(StaticDetails.NationalParkApiPath, id.GetValueOrDefault(), HttpContext.Session.GetString("JWToken"));
             if (nationalPark == null)
                 return NotFound();
             return View(nationalPark);
@@ -33,14 +36,15 @@ namespace ParkyWeb.Controllers
         {
             return Json(new
             {
-                data = await _parkRepository.GetAll(StaticDetails.NationalParkApiPath)
+                data = await _parkRepository.GetAll(StaticDetails.NationalParkApiPath, HttpContext.Session.GetString("JWToken"))
             });
         }
 
         [HttpDelete]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var status = await _parkRepository.Delete(StaticDetails.NationalParkApiPath, id);
+            var status = await _parkRepository.Delete(StaticDetails.NationalParkApiPath, id, HttpContext.Session.GetString("JWToken"));
             if (status)
             {
                 return Json(new
@@ -78,16 +82,16 @@ namespace ParkyWeb.Controllers
                 }
                 else
                 {
-                    var nationalParkFromDb = await _parkRepository.GetById(StaticDetails.NationalParkApiPath, nationalPark.Id);
+                    var nationalParkFromDb = await _parkRepository.GetById(StaticDetails.NationalParkApiPath, nationalPark.Id, HttpContext.Session.GetString("JWToken"));
                     nationalPark.Picture = nationalParkFromDb.Picture;
                 }
                 if(nationalPark.Id == 0)
                 {
-                    await _parkRepository.Create(StaticDetails.NationalParkApiPath, nationalPark);
+                    await _parkRepository.Create(StaticDetails.NationalParkApiPath, nationalPark, HttpContext.Session.GetString("JWToken"));
                 }
                 else
                 {
-                    await _parkRepository.Update(StaticDetails.NationalParkApiPath + nationalPark.Id, nationalPark);
+                    await _parkRepository.Update(StaticDetails.NationalParkApiPath + nationalPark.Id, nationalPark, HttpContext.Session.GetString("JWToken"));
                 }
                 return RedirectToAction(nameof(Index));
             }

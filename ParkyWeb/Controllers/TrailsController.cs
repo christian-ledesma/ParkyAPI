@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ParkyWeb.Models;
 using ParkyWeb.Models.ViewModel;
@@ -9,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace ParkyWeb.Controllers
 {
+    [Authorize]
     public class TrailsController : Controller
     {
         private readonly INationalParkRepository _parkRepository;
@@ -23,9 +26,10 @@ namespace ParkyWeb.Controllers
             return View(new Trail());
         }
 
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Upsert(int? id)
         {
-            IEnumerable<NationalPark> nationalParks = await _parkRepository.GetAll(StaticDetails.NationalParkApiPath);
+            IEnumerable<NationalPark> nationalParks = await _parkRepository.GetAll(StaticDetails.NationalParkApiPath, HttpContext.Session.GetString("JWToken"));
             var trailsViewModel = new TrailsViewModel
             {
                 NationalParkList = nationalParks.Select(n => new SelectListItem
@@ -38,7 +42,7 @@ namespace ParkyWeb.Controllers
 
             if (id == null)
                 return View(trailsViewModel);
-            trailsViewModel.Trail = await _trailRepository.GetById(StaticDetails.TrailApiPath, id.GetValueOrDefault());
+            trailsViewModel.Trail = await _trailRepository.GetById(StaticDetails.TrailApiPath, id.GetValueOrDefault(), HttpContext.Session.GetString("JWToken"));
             if (trailsViewModel.Trail == null)
                 return NotFound();
             return View(trailsViewModel);
@@ -52,11 +56,11 @@ namespace ParkyWeb.Controllers
             {
                 if (trailViewModel.Trail.Id == 0)
                 {
-                    await _trailRepository.Create(StaticDetails.TrailApiPath, trailViewModel.Trail);
+                    await _trailRepository.Create(StaticDetails.TrailApiPath, trailViewModel.Trail, HttpContext.Session.GetString("JWToken"));
                 }
                 else
                 {
-                    await _trailRepository.Update(StaticDetails.TrailApiPath + trailViewModel.Trail.Id, trailViewModel.Trail);
+                    await _trailRepository.Update(StaticDetails.TrailApiPath + trailViewModel.Trail.Id, trailViewModel.Trail, HttpContext.Session.GetString("JWToken"));
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -70,14 +74,15 @@ namespace ParkyWeb.Controllers
         {
             return Json(new
             {
-                data = await _trailRepository.GetAll(StaticDetails.TrailApiPath)
+                data = await _trailRepository.GetAll(StaticDetails.TrailApiPath, HttpContext.Session.GetString("JWToken"))
             });
         }
 
         [HttpDelete]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var status = await _trailRepository.Delete(StaticDetails.TrailApiPath, id);
+            var status = await _trailRepository.Delete(StaticDetails.TrailApiPath, id, HttpContext.Session.GetString("JWToken"));
             if (status)
             {
                 return Json(new
